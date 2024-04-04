@@ -12,5 +12,12 @@ print(test_token.detokenise(T))
 
 
 """
+from src.data.DataObjects.Text.SingleDomainDataObjects.SpecificImplementations import RegressiveSequenceTextData
+from src.data.Preprocessing.Text.Tokenise.CustomTokenisers import CustomCharacterToken
 
-import src.data.DataObjects.Text.TextDataObjectBase
+
+tokeniser = CustomCharacterToken()
+
+
+
+A = RegressiveSequenceTextData(parent_data_file_path = "./", text_sequencer = tokeniser, split_on = "char", sequence_len=20)

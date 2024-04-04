@@ -6,7 +6,7 @@ import os
 """
 
 
-#####################################_TEXT FILES_#####################################
+#####################################_TEXT FILES (BASE)_#####################################
 def read_text_file(file_path: str, encoding:str = None) -> str:
     """
         Reading in data from a text file. 
@@ -27,3 +27,9 @@ def write_text_file(file_path: str, content:str):
     """
     file = open(file_path, "w+")
     file.write(content)
+
+def full_text_loader(parent_path, encoding:str = None):
+    base_path = os.path.join(parent_path, "base.txt")
+    train_path = os.path.join(parent_path, "train.txt")
+    val_path = os.path.join(parent_path, "val.txt")
+    return read_text_file(base_path, encoding), read_text_file(train_path, encoding), read_text_file(val_path, encoding)

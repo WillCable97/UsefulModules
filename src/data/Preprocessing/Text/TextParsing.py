@@ -6,7 +6,7 @@
 def pivot_text(input_string: str, split_on: str = "\n", keep_pivot_string = True) -> list:
     """
         Will take an input string and split it on and input string
-        The output of the function is of shape [[], [], ...,[]]
+        The output of the function is of shape [str1, str2, ...,strn]
         - input_string: full input string
         - split_on: Character that marks end of sequence
         - keep_pivot_string: is the split string kept in the output, if true the split on character is appended to the end of each sequence

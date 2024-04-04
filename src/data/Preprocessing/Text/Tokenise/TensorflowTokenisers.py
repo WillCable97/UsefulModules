@@ -26,7 +26,7 @@ class TensorflowWordTokeniser(TokenBaseClass):
     def tokenise(self, input: list, sequence_length: int = None) -> tf.Tensor:
         mapped_text = self.core_tokenizer.texts_to_sequences(input)       
         padded_text = pad_sequences(mapped_text, padding ="post", maxlen=sequence_length, truncating='post')
-        tensor_val = tf.convert_to_tensor(padded_text)
+        tensor_val = tf.data.Dataset.from_tensor_slices(padded_text)
         return tensor_val 
     
     def detokenise(self, input: tf.Tensor) -> list:
