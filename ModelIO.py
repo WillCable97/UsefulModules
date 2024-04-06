@@ -23,7 +23,7 @@ def create_model_save(model_name: str, model_object:Model
     model_objs = os.path.join(base_path, "model_objs")
 
     tf.data.experimental.save(training_data, os.path.join(model_data, "training_data"))
-    tf.data.experimental.save(training_data, os.path.join(model_data, "validation_data"))
+    tf.data.experimental.save(validation_data, os.path.join(model_data, "validation_data"))
 
     model_object.save(os.path.join(model_objs, "model"))
     create_dir(os.path.join(model_objs, "tokens"))
@@ -34,4 +34,31 @@ def create_model_save(model_name: str, model_object:Model
         pickle.dump(tokenisers[token], token_file)
 
     
-    
+
+class ModelFromFile:
+    def __init__(self, model_name: str):
+        self.model_name = model_name
+        
+    def perform_load(self):
+        base_path = model_path(self.model_name)
+        model_data = os.path.join(base_path, "data")
+        model_objs = os.path.join(base_path, "model_objs")
+
+        training_data = tf.data.experimental.load(os.path.join(model_data, "training_data"))
+        validation_data = tf.data.experimental.load(os.path.join(model_data, "validation_data"))
+        model_obj = tf.keras.models.load_model(os.path.join(model_objs, "model"))
+        base_token_path = os.path.join(model_objs, "tokens")
+        tokens = {}
+
+        for token_file in os.listdir(base_token_path):
+            split_name = token_file.split(".")
+            token_name = split_name[0]
+            full_token_file = open(os.path.join(base_token_path, token_file), "rb")
+            token_obj = pickle.load(full_token_file)
+            tokens[token_name] = token_obj
+
+        self.training_data = training_data
+        self.validation_data = validation_data
+        self.model_obj = model_obj
+        self.tokenisers = tokens
+

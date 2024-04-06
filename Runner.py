@@ -7,6 +7,8 @@ import src.data.Preprocessing.Text.Tokenise as Tokens
 
 from src.models.RecurrentModels.RNN_model import RNN_model
 
+from ModelIO import create_model_save
+
 ############################################################HYPER PARAMTERS#####################################
 
 #Meta Info
@@ -48,26 +50,26 @@ sequential_inst.compile("adam", loss = loss_obj, metrics="accuracy")
 
 #Train
 final_train, final_val = data_object.batch_and_shuffle(batch_size=batch_size,buffer_size=buffer_size)
-#sequential_inst.fit(final_train, validation_data=final_val, epochs=epoch_count)
-
-#Save model, data and token
-#import tensorflow as tf
-
-# Create a sample dataset
-#dataset = tf.data.Dataset.range(10)
-#dataset = dataset.batch(2)  # Batch size 2 for demonstration
-
-# Define the file path where you want to save the dataset
-#file_path = 'batched_dataset.tfrecord'
-
-# Save the dataset
-
-dataset = data_object.train_data_hist.label_data
-tf.data.experimental.save(dataset, "./")
 
 
-#self.train_data_hist.label_data
-#self.val_data_hist.label_data
+
+#Model IO
+train_data = data_object.train_data_hist.label_data
+val_data = data_object.val_data_hist.label_data
+tokeniser = data_object.text_sequencer
+
+
+sequential_for_save = RNN_model(vocab_size=vocab_size+1, embedding_dim=embedding_dimension, rnn_units=dense_dimension
+                            ,batch_size=1)
+
+sequential_for_save.build(tf.TensorShape([1, None])) 
+sequential_for_save.set_weights(sequential_inst.get_weights())
+
+
+
+create_model_save(model_name, sequential_for_save, train_data, val_data, {"primary_token": tokeniser})
+
+
 
 
 

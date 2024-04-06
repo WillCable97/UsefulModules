@@ -11,6 +11,7 @@ class RegressiveSequenceTextData(SingleDomainDataObject):
     def __init__(self, parent_data_file_path: str, text_sequencer: TokenBaseClass, split_on: str, sequence_len: int):
        super().__init__(text_sequencer, TextIO.full_text_loader, sequence_string, standard_autoregressive_label
                         , {"parent_path" : parent_data_file_path}, {"split_on" : split_on, "sequence_len": sequence_len})
+       self.vocab_size = self.text_sequencer.vocab_size
        
 
 
