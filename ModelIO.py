@@ -1,4 +1,7 @@
 import os
+import tensorflow as tf
+from keras import Model
+import pickle
 
 def model_path(model_name: str) -> str:
     base_bath = os.path.abspath("./")
@@ -12,7 +15,23 @@ def create_dir(dir_path: str) -> bool: #Returns true of directory created
         return True
     return False
 
+def create_model_save(model_name: str, model_object:Model
+                      , training_data, validation_data
+                      , tokenisers = {}):
+    base_path = model_path(model_name)
+    model_data = os.path.join(base_path, "data")
+    model_objs = os.path.join(base_path, "model_objs")
 
-def populate_model_details(input_data_obj, input_model):
-    final_train = input_data_obj.final_train
-    final_val = input_data_obj.final_val
+    tf.data.experimental.save(training_data, os.path.join(model_data, "training_data"))
+    tf.data.experimental.save(training_data, os.path.join(model_data, "validation_data"))
+
+    model_object.save(os.path.join(model_objs, "model"))
+    create_dir(os.path.join(model_objs, "tokens"))
+
+    for token in tokenisers: 
+        token_path = os.path.join(model_objs, "tokens", f"{token}.pkl")
+        token_file = open(token_path, "wb")
+        pickle.dump(tokenisers[token], token_file)
+
+    
+    
