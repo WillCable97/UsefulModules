@@ -62,3 +62,6 @@ class ModelFromFile:
         self.model_obj = model_obj
         self.tokenisers = tokens
 
+
+    
+

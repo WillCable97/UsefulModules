@@ -26,7 +26,7 @@ buffer_size = 10000
 #Model hyperparameters
 embedding_dimension = 128
 dense_dimension = 512
-epoch_count = 1
+epoch_count = 10
 
 #File path values
 root_dir = os.path.abspath("./")
@@ -35,7 +35,7 @@ data_source_base = os.path.join(processed_data, data_soure, f"Seq{data_sequencin
 
 #Data objects
 tokeniser = Tokens.CustomTokenisers.CustomCharacterToken()
-data_object = RegressiveSequenceTextData(parent_data_file_path = "./", text_sequencer = tokeniser, split_on = "char", sequence_len=20)
+data_object = RegressiveSequenceTextData(parent_data_file_path = data_source_base, text_sequencer = tokeniser, split_on = "char", sequence_len=data_sequencing_len)
 
 vocab_size = data_object.vocab_size
 print(vocab_size)
@@ -53,6 +53,10 @@ final_train, final_val = data_object.batch_and_shuffle(batch_size=batch_size,buf
 
 
 
+from src.models.Callbacks.callbacks import checkpoint_callback
+my_checkpoint_callback = checkpoint_callback(root_dir, model_name,5)
+sequential_inst.fit(final_train, epochs=epoch_count, validation_data=final_val, callbacks=[my_checkpoint_callback])
+
 #Model IO
 train_data = data_object.train_data_hist.label_data
 val_data = data_object.val_data_hist.label_data
@@ -64,7 +68,6 @@ sequential_for_save = RNN_model(vocab_size=vocab_size+1, embedding_dim=embedding
 
 sequential_for_save.build(tf.TensorShape([1, None])) 
 sequential_for_save.set_weights(sequential_inst.get_weights())
-
 
 
 create_model_save(model_name, sequential_for_save, train_data, val_data, {"primary_token": tokeniser})
