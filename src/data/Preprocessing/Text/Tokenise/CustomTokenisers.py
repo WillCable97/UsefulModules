@@ -38,5 +38,7 @@ class CustomCharacterToken(TokenBaseClass):
         return tensor_val
 
     def detokenise(self, input: tf.Tensor) -> list:
+        #print(input)
+        #print(input.numpy())
         split_list = [[self.index_word[char_found] for char_found in sentence] for sentence in input.numpy()]
         return [''.join(split_sent) for split_sent in split_list]

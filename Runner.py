@@ -12,7 +12,7 @@ from ModelIO import create_model_save
 ############################################################HYPER PARAMTERS#####################################
 
 #Meta Info
-model_name = "W_P_RNN100_S1.0"
+model_name = "W_P_RNN100_S1.1"
 
 #Data hyperparameters
 data_soure = "HuggingFace"
@@ -26,7 +26,7 @@ buffer_size = 10000
 #Model hyperparameters
 embedding_dimension = 128
 dense_dimension = 512
-epoch_count = 10
+epoch_count = 20
 
 #File path values
 root_dir = os.path.abspath("./")
