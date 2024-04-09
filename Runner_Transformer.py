@@ -1,8 +1,7 @@
 import os
 import tensorflow as tf
 
-from src.data.DataObjects.Text.SingleDomainDataObjects.SpecificImplementations import RegressiveSequenceTextData
-#from src.data.Preprocessing.Text.Tokenise.CustomTokenisers import CustomCharacterToken
+from src.data.DataObjects.Text.SpecificDataObjects import RegressiveBiDomainTextdata
 from src.data.Preprocessing.Text.Tokenise.TensorflowTokenisers import TensorflowWordTokeniser
 import src.data.Preprocessing.Text.Tokenise as Tokens
 
@@ -35,8 +34,21 @@ root_dir = os.path.abspath("./")
 processed_data = os.path.join(root_dir, "data", "processed")
 data_source_base = os.path.join(processed_data, data_soure, f"Seq{data_sequencing_len}")
 
+from src.data.Preprocessing.Text.Tokenise.CustomTokenisers import CustomCharacterToken
+
 #Data objects
-tokeniser = TensorflowWordTokeniser()
+tokeniser = CustomCharacterToken()
+data_object = RegressiveBiDomainTextdata(parent_data_file_path=data_source_base, text_sequencer=tokeniser, split_on="char", sequence_len=data_sequencing_len)
+
+
+for i in data_object.aggregated_histories:
+    for j in i:
+        print(j.label_data)
+
+
+print(f"{data_object.labeled_train} \n {data_object.labeled_val}")
+
+
 
 
 #.CustomTokenisers.CustomCharacterToken()

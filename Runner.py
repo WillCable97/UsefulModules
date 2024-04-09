@@ -1,7 +1,7 @@
 import os
 import tensorflow as tf
 
-from src.data.DataObjects.Text.SingleDomainDataObjects.SpecificImplementations import RegressiveSequenceTextData
+from src.data.DataObjects.Text.SpecificDataObjects import RegressiveSequenceTextData
 from src.data.Preprocessing.Text.Tokenise.CustomTokenisers import CustomCharacterToken
 import src.data.Preprocessing.Text.Tokenise as Tokens
 

@@ -29,7 +29,7 @@ Gen = TextGenerator(model, loaded_token)
 for feat, label in validation_data:
     feat_update = tf.expand_dims(feat, axis=0)
     Gen.load_inputs_by_token([feat_update], [loaded_token])
-    print(Gen.generate_text(100))
+    print(Gen.generate_text(150))
     break
 
 

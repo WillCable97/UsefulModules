@@ -28,8 +28,13 @@ def write_text_file(file_path: str, content:str):
     file = open(file_path, "w+")
     file.write(content)
 
-def full_text_loader(parent_path, encoding:str = None):
-    base_path = os.path.join(parent_path, "base.txt")
-    train_path = os.path.join(parent_path, "train.txt")
-    val_path = os.path.join(parent_path, "val.txt")
+
+
+
+
+#####################################_FOR SPECIFIC TASKS_#####################################
+def full_text_loader(parent_path, encoding:str = None, file_prefix=""):
+    base_path = os.path.join(parent_path, f"{file_prefix}base.txt")
+    train_path = os.path.join(parent_path, f"{file_prefix}train.txt")
+    val_path = os.path.join(parent_path, f"{file_prefix}val.txt")
     return read_text_file(base_path, encoding), read_text_file(train_path, encoding), read_text_file(val_path, encoding)
