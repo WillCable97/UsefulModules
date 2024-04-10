@@ -3,17 +3,22 @@ import numpy as np
 
 
 class TextGenerator:
-    def __init__(self, input_model, output_token):
+    def __init__(self, input_model, output_token, padded_sequence_lens):
         self.input_model = input_model
         self.output_token = output_token
+        self.padded_sequence_lens = padded_sequence_lens
 
     def load_inputs_by_string(self, input:list, tokenisers):
         self.string_inputs = input
-        token_inputs = [tokenisers[i].tokenise([string_val]) for i, string_val in enumerate(input)]
-        self.token_inputs = token_inputs
+        formated_input = [[i] for i in input]
+        tokenised_text = [tokenisers[i].tokenise(string_val, sequence_length=self.padded_sequence_lens[i]) for i, string_val in enumerate(formated_input)]
+        numpy_arrays = [[item.numpy() for item in sliced_dataset] for sliced_dataset in tokenised_text]
+        tensor_objects = [tf.convert_to_tensor(i) for i in numpy_arrays]
+        print(tensor_objects)
+        self.token_inputs = tensor_objects
     
     def load_inputs_by_token(self, input: list, tokenisers): #This is going to expect Tensor objects as input
-        self.token_inputs = input#tf.squeeze(input, axis = 0)
+        self.token_inputs = input
         string_inputs = [tokenisers[i].detokenise(tok_seq) for i, tok_seq in enumerate(input)]
         self.string_inputs = string_inputs
 
@@ -32,5 +37,5 @@ class TextGenerator:
 
         generated_tokens = tf.convert_to_tensor([generated_tokens])
         print(starting_text)
-        return ''.join(self.output_token .detokenise(generated_tokens))
+        return ''.join(self.output_token.detokenise(generated_tokens))
 

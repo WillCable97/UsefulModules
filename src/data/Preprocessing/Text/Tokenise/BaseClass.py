@@ -37,7 +37,7 @@ class TokenBaseClass(ABC):
         """
 
     @abstractmethod
-    def detokenise(self, input: tf.Tensor) -> list:
+    def detokenise(self, input: tf.Tensor, display_padding = False) -> list:
         """
             Perform conversion back to text
         """

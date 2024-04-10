@@ -7,6 +7,7 @@ from src.data.Preprocessing.Text.Tokenise.BaseClass import TokenBaseClass
 def create_mapping_from_vocab(vocab: list):
     word_index = {c: i+1 for i,c in enumerate(vocab)}
     index_word = {word_index[c]: c for c in word_index}
+    index_word[0] = "[PAD]"
     return word_index, index_word
 
 
@@ -32,12 +33,14 @@ class CustomCharacterToken(TokenBaseClass):
 
 
     def tokenise(self, input: list, sequence_length: int = None) -> tf.Tensor:
+        print(f"PADDING HAPPENENS HERE: {sequence_length}")
         mapped_text = [[self.word_index[char_found] for char_found in sentence] for sentence in input]        
         padded_text = pad_sequences(mapped_text, padding ="post", maxlen=sequence_length, truncating='post')
         tensor_val = tf.data.Dataset.from_tensor_slices(padded_text)
+        print(tensor_val)
         return tensor_val
 
-    def detokenise(self, input: tf.Tensor) -> list:
+    def detokenise(self, input: tf.Tensor, display_padding = False) -> list:
         #print(input)
         #print(input.numpy())
         split_list = [[self.index_word[char_found] for char_found in sentence] for sentence in input.numpy()]

@@ -13,7 +13,7 @@ class Transformer(tf.keras.Model):
 
         self.encoder_layer = EncoderLayer(vocab_size=context_vocab_size+1,embedding_dimension=embedding_dimension
                                           ,sequence_length=context_length,num_heads=num_heads
-                                          ,dense_dimension=dense_dimension,num_att_layers=num_att_layers)
+                                          ,dense_dimension=dense_dimension,num_att_layers=num_att_layers) #The increment of the vocab size is to account for the index of 0 which is not used
         
         self.decoder_layer = DecoderLayer(vocab_size=vocab_size+1,embedding_dimension=embedding_dimension
                                           ,sequence_length=content_length,num_heads=num_heads

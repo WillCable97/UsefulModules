@@ -37,4 +37,5 @@ def full_text_loader(parent_path, encoding:str = None, file_prefix=""):
     base_path = os.path.join(parent_path, f"{file_prefix}base.txt")
     train_path = os.path.join(parent_path, f"{file_prefix}train.txt")
     val_path = os.path.join(parent_path, f"{file_prefix}val.txt")
+    print(f"######__CUSTOM RUN LOG: Successfully read text file with prefix: {file_prefix}")
     return read_text_file(base_path, encoding), read_text_file(train_path, encoding), read_text_file(val_path, encoding)

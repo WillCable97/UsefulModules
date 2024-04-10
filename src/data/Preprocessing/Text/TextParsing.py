@@ -32,14 +32,14 @@ def sequence_string(input_string: str, split_on: str, sequence_len: int
     elif split_on == "word":
         split_list = find_positions(input_string, " ")
     else:
-        split_list = find_positions(input_string, custom_char)
+        split_list = find_positions(input_string, split_on)
 
     #Perform split based on indexes
     overflow =  not (((len(split_list)+1) % sequence_len) ==0)
     updated_split_points = split_list[sequence_len-1::sequence_len]#[1:]
     list_splits = split_by_index(input=input_string, indexes=updated_split_points)
     if overflow: list_splits = list_splits[:-1]
-
+    print(list_splits[:10])
     return list_splits
 
 

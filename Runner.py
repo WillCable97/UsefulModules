@@ -14,7 +14,7 @@ from ModelIO import create_model_save
 #Meta Info
 model_name = "W_P_RNN100_S1.1"
 
-#Data hyperparameters
+#Data hyperparameters (Data should be set up such that these are only used for generating input file names)
 data_soure = "HuggingFace"
 data_sequencing_len = 100
 
@@ -35,7 +35,7 @@ data_source_base = os.path.join(processed_data, data_soure, f"Seq{data_sequencin
 
 #Data objects
 tokeniser = Tokens.CustomTokenisers.CustomCharacterToken()
-data_object = RegressiveSequenceTextData(parent_data_file_path = data_source_base, text_sequencer = tokeniser, split_on = "char", sequence_len=data_sequencing_len)
+data_object = RegressiveSequenceTextData(parent_data_file_path = data_source_base, text_sequencer = tokeniser)
 
 vocab_size = data_object.vocab_size
 print(vocab_size)
@@ -43,6 +43,9 @@ print(vocab_size)
 #Model
 sequential_inst = RNN_model(vocab_size=vocab_size+1, embedding_dim=embedding_dimension, rnn_units=dense_dimension
                             ,batch_size=batch_size)
+
+sequential_for_save = RNN_model(vocab_size=vocab_size+1, embedding_dim=embedding_dimension, rnn_units=dense_dimension
+                            ,batch_size=1)
 
 #Compile
 loss_obj = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
@@ -53,18 +56,22 @@ final_train, final_val = data_object.batch_and_shuffle(batch_size=batch_size,buf
 
 
 
-from src.models.Callbacks.callbacks import checkpoint_callback
+from src.models.Callbacks.callbacks import checkpoint_callback, csv_callback
+from src.models.Callbacks.TextOutputCallback import OutputTextCallback
 my_checkpoint_callback = checkpoint_callback(root_dir, model_name,5)
-sequential_inst.fit(final_train, epochs=epoch_count, validation_data=final_val, callbacks=[my_checkpoint_callback])
+my_csv_callback = csv_callback(root_dir, model_name)
+my_text_callback = OutputTextCallback(root_dir, model_name, sequential_for_save, data_object.text_sequencer, ["the man went"], [data_object.text_sequencer])
 
+
+sequential_inst.fit(final_train, epochs=epoch_count, validation_data=final_val, callbacks=[my_checkpoint_callback, my_csv_callback, my_text_callback])
+"""
 #Model IO
 train_data = data_object.train_data_hist.label_data
 val_data = data_object.val_data_hist.label_data
 tokeniser = data_object.text_sequencer
 
 
-sequential_for_save = RNN_model(vocab_size=vocab_size+1, embedding_dim=embedding_dimension, rnn_units=dense_dimension
-                            ,batch_size=1)
+
 
 sequential_for_save.build(tf.TensorShape([1, None])) 
 sequential_for_save.set_weights(sequential_inst.get_weights())
@@ -73,6 +80,6 @@ sequential_for_save.set_weights(sequential_inst.get_weights())
 create_model_save(model_name, sequential_for_save, train_data, val_data, {"primary_token": tokeniser})
 
 
-
+"""
 
 

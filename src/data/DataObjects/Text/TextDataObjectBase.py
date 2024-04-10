@@ -25,7 +25,7 @@ class ObjectHistoryContainer:
     label_data: typing.Any
 
 class TextDataObjectBase(typing.Protocol):
-    def run_both_processing_pipelines(self, training_data: str, val_data: str, **kwargs) -> ObjectHistoryContainer:
+    def run_both_processing_pipelines(self, training_data: str, val_data: str, padded_length: int = None, **kwargs) -> ObjectHistoryContainer:
         ...
 
     def run_single_processing_pipeline(self, raw_data_source:str, text_sequencer: TokenBaseClass
@@ -38,16 +38,16 @@ class TextDataObjectBase(typing.Protocol):
 
 
 class TextDataobjectAutoregressorGeneral:
-    def run_both_processing_pipelines(self, training_data: str, val_data: str, **kwargs):
-        train_history = self.run_single_processing_pipeline(training_data, **kwargs)
-        val_history = self.run_single_processing_pipeline(val_data, **kwargs)
+    def run_both_processing_pipelines(self, training_data: str, val_data: str, padded_length: int = None, **kwargs):
+        train_history = self.run_single_processing_pipeline(training_data, padded_length, **kwargs)
+        val_history = self.run_single_processing_pipeline(val_data, padded_length, **kwargs)
         return train_history, val_history
 
-    def run_single_processing_pipeline(self, raw_data_source:str, text_sequencer: TokenBaseClass
+    def run_single_processing_pipeline(self, raw_data_source:str, padded_length: int, text_sequencer: TokenBaseClass
                                 , input_parser: typing.Callable[[str], list], label_method: typing.Callable
                                 , parser_kwargs = {}) -> ObjectHistoryContainer:
         parsed_data = input_parser(raw_data_source, **parser_kwargs)
-        token_text = text_sequencer.tokenise(parsed_data)
+        token_text = text_sequencer.tokenise(parsed_data, sequence_length=padded_length)
         label_data = token_text.map(label_method)
         return_obj = ObjectHistoryContainer(raw_data=raw_data_source, parsed_data=parsed_data, token_text=token_text, label_data=label_data)
         return return_obj
@@ -82,7 +82,8 @@ class MultiDomainDataObject(TextDataobjectAutoregressorGeneral):
                  ,input_readers: list[typing.Callable[[typing.Any], list]]
                  ,input_parsers: list[typing.Callable[[str], list]]
                  ,label_methods: list[typing.Callable]
-                 ,domain_merge_method = typing.Callable
+                 ,domain_merge_method: typing.Callable
+                 ,padded_length: int
                  ,data_read_kwargs = [{}], parser_kwargs = [{}]):
         
         self.text_sequencers = text_sequencers
@@ -95,8 +96,9 @@ class MultiDomainDataObject(TextDataobjectAutoregressorGeneral):
             self.text_sequencers[i].generate_vocab(raw_data)
             
             train_data_hist, val_data_hist = self.run_both_processing_pipelines(training_data=training_data, val_data=val_data
-                                                                                        , text_sequencer=text_sequencers[i], input_parser=input_parsers[i], label_method=label_methods[i]
-                                                                                        , parser_kwargs=parser_kwargs[i])
+                                                                                , padded_length=padded_length
+                                                                                , text_sequencer=text_sequencers[i], input_parser=input_parsers[i], label_method=label_methods[i]
+                                                                                , parser_kwargs=parser_kwargs[i])
             aggregated_histories.append([train_data_hist, val_data_hist])
         self.aggregated_histories = aggregated_histories
         self.labeled_train, self.labeled_val = domain_merge_method(*aggregated_histories)
