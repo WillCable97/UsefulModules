@@ -33,21 +33,3 @@ class OutputTextCallback(keras.callbacks.Callback):
         file_path = os.path.join(full_path, self.file_name)
         file = open(file_path, 'w+')
         file.write(self.txt_generated)
-
-"""
-
-def csv_callback(base_path, input_model_name):
-    full_path = path_to_model_saves(base_path, input_model_name)
-    full_path = os.path.join(full_path, "csv_tracker")
-    if not os.path.exists(full_path): os.makedirs(full_path)
-    csv_prefix = os.path.join(full_path, "csv_tracker")
-    csv_callback = CSVLogger(csv_prefix)
-    return csv_callback
-
-class TextGenerator:
-    def __init__(self, input_model, output_token):
-        self.input_model = input_model
-        self.output_token = output_token
-
-
-class TextOutputCallback"""
