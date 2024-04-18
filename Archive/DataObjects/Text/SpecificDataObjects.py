@@ -3,7 +3,7 @@ import tensorflow as tf
 
 from src.data.Preprocessing.Text.Tokenise.BaseClass import TokenBaseClass
 from src.data.DataObjects.Text.TextDataObjectBase import SingleDomainDataObject, MultiDomainDataObject
-import src.data.IO.Text as TextIO
+import data.Text.IO as TextIO
 from src.data.Preprocessing.Text.TextParsing import sequence_string
 from src.data.DataObjects.Text.LabelFunctions import standard_autoregressive_label
 

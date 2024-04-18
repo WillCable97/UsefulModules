@@ -1,8 +1,7 @@
 import tensorflow as tf
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 
-from src.data.Preprocessing.Text.Tokenise.BaseClass import TokenBaseClass
-
+from src.data.Text.Tokens.BaseClass import TokenBaseClass
 
 def create_mapping_from_vocab(vocab: list):
     word_index = {c: i+1 for i,c in enumerate(vocab)}
@@ -15,10 +14,11 @@ class CustomCharacterToken(TokenBaseClass):
     """
         Tokeniser for charachter level data
     """
-    def __init__(self):
+    def __init__(self, sequence_len:int = None):
         self.pad_token = 0
         self.start_string = "^" #Not implemented
         self.end_string = "^" #Not implemented
+        self.sequence_len = sequence_len
 
     def generate_vocab(self, input: list) -> None:
         full_text = ' '.join(input)
@@ -33,15 +33,11 @@ class CustomCharacterToken(TokenBaseClass):
 
 
     def tokenise(self, input: list, sequence_length: int = None) -> tf.Tensor:
-        print(f"PADDING HAPPENENS HERE: {sequence_length}")
         mapped_text = [[self.word_index[char_found] for char_found in sentence] for sentence in input]        
         padded_text = pad_sequences(mapped_text, padding ="post", maxlen=sequence_length, truncating='post')
         tensor_val = tf.data.Dataset.from_tensor_slices(padded_text)
-        print(tensor_val)
         return tensor_val
 
     def detokenise(self, input: tf.Tensor, display_padding = False) -> list:
-        #print(input)
-        #print(input.numpy())
         split_list = [[self.index_word[char_found] for char_found in sentence] for sentence in input.numpy()]
         return [''.join(split_sent) for split_sent in split_list]

@@ -1,5 +1,5 @@
-from src.models.TextGenerator import TextGenerator
-from src.models.Callbacks.callbacks import path_to_model_saves
+from src.helpers.TextGenerator import TextGenerator
+from src.helpers.Callbacks.BaseCallbacks import path_to_model_saves
 
 import os 
 import keras

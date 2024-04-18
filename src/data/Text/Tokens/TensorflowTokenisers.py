@@ -4,7 +4,7 @@ from tensorflow.keras.preprocessing.text import Tokenizer
 
 from src.data.Preprocessing.Text.Tokenise.BaseClass import TokenBaseClass
 
-class TensorflowWordTokeniser(TokenBaseClass):
+class WordTokeniser(TokenBaseClass):
     """
         Wrapper for standard word based tokeniser in Tensorflow. 
         Many of the functions are handled already by the object
