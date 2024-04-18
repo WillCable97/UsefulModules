@@ -17,7 +17,7 @@ def pivot_text(input_string: str, split_on: str = "\n", keep_pivot_string = True
 
 
 def sequence_string(input_string: str, split_on: str, sequence_len: int
-                    , discard_overflow = True, custom_char: str = None):
+                    , discard_overflow = True):
     """
         Will take an input string and create sequences of fixed length
         The output of the function is of shape [str1, str2, ...,strn]
