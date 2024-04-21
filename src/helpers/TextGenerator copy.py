@@ -377,3 +377,113 @@ class GenTokenTracker:
 
 
 """
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+"""
+
+
+
+
+
+
+class SingleInputHandler:
+    """
+        Responsible for sinlgle domain of input
+        Create string and token representations
+        Can update input tokens for recursive
+    """
+    def __init__(self, input: Union[str, tf.Tensor], input_tokeniser: TokenBaseClass, seq_len = None):
+        self.token_input = None
+        self.update_input(input, input_tokeniser, seq_len)
+        self.tokeniser = input_tokeniser
+
+    def update_input(self, input: Union[str, tf.Tensor], input_tokeniser: TokenBaseClass, seq_len = None):
+        output = string_to_tokens(input, input_tokeniser, seq_len) if isinstance(input, str) else input
+        self.token_input = output
+
+
+
+
+
+
+class GeneralInputHandler:
+    def __init__(self, string_beginning: Union[str, tf.Tensor], output_tokeniser: TokenBaseClass
+                 , input_model
+                 , context_inputs: Union[str, list] = None, context_tokeniser: Union[str, list] = None):
+        
+        self.auto_regressive_input = SingleInputHandler(input=string_beginning, input_tokeniser=output_tokeniser)
+        self.input_model = input_model
+        self.context_inputs = self.handle_context_inputs(context_inputs, context_tokeniser)
+        self.single_domain = True if self.context_inputs is None else False
+        self.token_input = self.combine_domains()
+    
+    def update_input(self, input: Union[str, tf.Tensor], input_tokeniser: TokenBaseClass, seq_len = None):
+            self.auto_regressive_input.update_input(input=input, input_tokeniser=input_tokeniser, seq_len=seq_len)
+            self.token_input = self.combine_domains()
+    
+    def combine_domains(self):
+        if self.single_domain: return self.auto_regressive_input.token_input
+        all_inputs = self.context_inputs.append(self.auto_regressive_input)
+        return tf.stack([x.token_input for x in all_inputs], axis=1)
+
+    
+    def handle_context_inputs(self, context_inputs: Union[str, list] = None, context_tokeniser: Union[str, list] = None) ->list:
+        if context_inputs is None: return #there is no context
+
+        #Ensure all in list format
+        if isinstance(context_inputs,str):
+            context_inputs = [context_inputs]
+            context_tokeniser = [context_tokeniser]
+
+        zipped_inputs = zip(context_inputs, context_tokeniser)
+        output = [SingleInputHandler(input=input, input_tokeniser=tokeniser, seq_len=tokeniser.sequence_len) 
+                  for input, tokeniser in zipped_inputs]
+
+        return output
+
+
+
+
+class ModelHandle:
+    def __init__(self, input_model):
+        self.input_model = input_model
+
+    def get_output(self, model_input):
+        raw_output = self.input_model(model_input)
+        return raw_output
+
+
+    def get_max_token(self, model_output, index):
+        pass
+
+
+
+
+
+
+"""

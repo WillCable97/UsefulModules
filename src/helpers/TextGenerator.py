@@ -4,6 +4,7 @@ import numpy as np
 from src.data.Text.Tokens.BaseClass import TokenBaseClass
 
 
+from typing import Union
 
 """
     1- Input Handler: Takes input either as string or token and creates input to the model 
@@ -23,128 +24,122 @@ from src.data.Text.Tokens.BaseClass import TokenBaseClass
 """
 
 
+def string_to_tokens(input_string: str, tokeniser: TokenBaseClass, seq_len=None):
+    tokenised_text = tokeniser.tokenise(input=[input_string], sequence_length=seq_len) #This returns slice dataset (can't be fed directly into model)
+    numpy_text = [i.numpy() for i in tokenised_text]
+    tensor_obj = tf.convert_to_tensor(numpy_text[0])
+    return tensor_obj
+
+class TextSequenceInputHandler:
+    def __init__(self, string_beginning: Union[str, tf.Tensor], output_tokeniser: TokenBaseClass
+                 , context_inputs: Union[str, list] = None, context_tokenisers: Union[TokenBaseClass, list] = None):
+        self.string_beginning = string_beginning
+        self.output_tokeniser = output_tokeniser
+        self.context_inputs = context_inputs
+        self.context_tokenisers = context_tokenisers
+
+        self.single_domain = True if context_inputs is None else False
+
+        self.auto_regressive_tensor = self.process_input(string_beginning, output_tokeniser)
+        self.contexts = self.create_context()
+
+    def process_input(self, input: Union[str,tf.Tensor], tokeniser: TokenBaseClass, seq_len = None):
+        output = string_to_tokens(input, tokeniser, seq_len) if isinstance(input, str) else input
+        return tf.expand_dims(output, axis=0)
+    
+    def create_context(self) -> list:
+        if self.single_domain: return []
+        
+        inputs_int = None
+        tokenisers_int = None
+
+        if isinstance(self.context_inputs, str):
+            inputs_int = [self.context_inputs]
+            tokenisers_int = [self.context_tokenisers]
+        else:
+            inputs_int = self.context_inputs
+            tokenisers_int = self.context_tokenisers
+
+        zipped_inputs = zip(inputs_int, tokenisers_int)
+
+        #Here we will assume context is padded to match model specs
+        return [self.process_input(input_found, token_found, token_found.sequence_len) for input_found, token_found in zipped_inputs]
+
+        
+    def create_model_input(self):
+        all_inputs = self.contexts
+        all_inputs.append(self.auto_regressive_tensor)
+        all_inputs = all_inputs[0] if self.single_domain else all_inputs
+        return all_inputs
+         
+
+
+class ModelHandler:
+    def __init__(self, input_model: tf.keras.Model):
+        self.input_model = input_model
+    
+    def pass_inputs(self, inputs):
+        return self.input_model(inputs)
+    
+    def get_new_token_by_max(self, input) -> int:
+        output = self.pass_inputs(inputs=input)
+        gen_distribution = output[0][-1]
+        found_token = tf.argmax(gen_distribution)
+        return found_token
+
+
+
+class OutputSequence:
+    def __init__(self, output_tokeniser: TokenBaseClass):
+        self.output_tokeniser = output_tokeniser
+        self.max_len_allowed = self.output_tokeniser.sequence_len
+        self.init_complete = False
+        self.initial_tokens: tf.Tensor = None
+        self.generated_tokens = tf.convert_to_tensor([], dtype=tf.int32)
+
+    def run_init(self, init_tokens: tf.Tensor):
+        self.initial_tokens = init_tokens
+        self.init_complete = True
+
+    def add_token(self, new_token):
+        self.generated_tokens = tf.concat([self.generated_tokens, [new_token]], axis=0)
+    
+    def create_new_input(self):
+        full_tensor = tf.concat([self.initial_tokens[0], self.generated_tokens], axis=0)
+        if tf.size(full_tensor) > self.max_len_allowed: full_tensor = full_tensor[(-1) * self.max_len_allowed:]
+        return tf.expand_dims(full_tensor, axis =0)
+    
+    def print_results(self):
+        print(self.output_tokeniser.detokenise(tf.expand_dims(self.generated_tokens, axis=0)))
+
+
 
 
 class TextGenerator:
-    def __init__(self, input_string: str, output_tokeniser = TokenBaseClass, input_model, aux_inputs = None, aux_tokens = None):
-        input_handle = InputHandler(input_string, output_tokeniser, aux_inputs, aux_tokens)
-        model_handle = ModelHandler(input_model)
-        output_handler = OutputHandler(output_tokeniser)
+    def __init__(self, string_beginning: Union[str, tf.Tensor], output_tokeniser: TokenBaseClass
+                 , input_model: tf.keras.Model
+                 , context_inputs: Union[str, list] = None, context_tokenisers: Union[TokenBaseClass, list] = None):
+        self.input_handle = TextSequenceInputHandler(string_beginning=string_beginning, output_tokeniser=output_tokeniser
+                                                     , context_inputs=context_inputs, context_tokenisers=context_tokenisers)
+        self.model_handle = ModelHandler(input_model=input_model)
+        self.output_handle = OutputSequence(output_tokeniser)
 
-    def generate_output(self, max_len: int, termination_token: int = None):
-        for i in range(max_len):
-            model_input = input_handler.get_input()
-            model_output = model_handle.get_output(model_input)
-            token = model_output.get_max_token()
-            output_handler.add_token(token)
-            input_handle.update_input(output_handler.get_input_vector())
 
-        return output_handler.final_output()
+    def generate_sequence(self, seqence_length):
+        for i in range(seqence_length):
+            model_input = self.input_handle.create_model_input()
+            auto_regressive_input = self.input_handle.auto_regressive_tensor
+            new_token = self.model_handle.get_new_token_by_max(model_input)
+            if not self.output_handle.init_complete: self.output_handle.run_init(init_tokens=auto_regressive_input)
+            self.output_handle.add_token(new_token=new_token)
+            self.input_handle.auto_regressive_tensor = self.output_handle.create_new_input()
+
+
+            #print(f"Initial Input: {self.input_handle.auto_regressive_tensor}")
+            #print(f"Updated Input: {self.output_handle.create_new_input()}")
+            
+
+        self.output_handle.print_results()
         
-
-
-from typing import Union
-
-class SingleInputHandler:
-    def __init__(self, input: Union[str, tf.Tensor], input_tokeniser: TokenBaseClass, seq_len = None):
-        self.input = input
-        self.input_tokeniser = input_tokeniser
-        self.seq_len = seq_len
-        self.formatted_input = self.convert_initial_input()
-
-    def convert_initial_input(self) -> tf.Tensor:
-        output = string_to_tokens(self.input, self.input_tokeniser, self.seq_len) if isinstance(self.input, str) else self.input
-        return output
-
-    def update_input(self, new_token):
-        pass
-
-
-class GeneralInputHandlers:
-    def __init__(self, input_string: str, output_tokeniser = TokenBaseClass, input_model, aux_inputs = None, aux_tokens = None):
-        pass
-
-
-
-
-
-
-
-
-
-class StandardRecursionInput:
-    def __init__(self, input: Union[str, tf.Tensor], input_tokeniser: TokenBaseClass, seq_len = None):
-        self.input = input
-        self.input_tokeniser = input_tokeniser
-        self.seq_len = seq_len
-        self.model_input = self.convert_initial_input()
-
-    def convert_initial_input(self) -> tf.Tensor:
-        output = string_to_tokens(self.input, self.input_tokeniser, self.seq_len) if isinstance(self.input, str) else self.input
-        return output
-
-    def load_in_generated_tokens(self, input_tokens: tf.Tensor) -> None:
-        #this is the text from the generated text object
-        self.model_input = input_tokens
-
-
-
-
-
-
-
-
-
-
-class InputHandler(Protocol):
-    def convert_initial_input(self):
-        ...
-
-
-    def load_in_generated_tokens(self, input_tokens: tf.Tensor):
-        ...
-
-
-class StandardRecursionInput:
-    def __init__(self, input: Union[str, tf.Tensor], input_tokeniser: TokenBaseClass, seq_len = None):
-        self.input = input
-        self.input_tokeniser = input_tokeniser
-        self.seq_len = seq_len
-        self.model_input = self.convert_initial_input()
-
-    def convert_initial_input(self) -> tf.Tensor:
-        output = string_to_tokens(self.input, self.input_tokeniser, self.seq_len) if isinstance(self.input, str) else self.input
-        return output
-
-    def load_in_generated_tokens(self, input_tokens: tf.Tensor) -> None:
-        #this is the text from the generated text object
-        self.model_input = input_tokens
-
-
-class TransformerRecursionInput:
-    def __init__(self, context_input: Union[str, tf.Tensor], context_tokeniser: TokenBaseClass
-                 , content_input: Union[str, tf.Tensor], content_tokeniser: TokenBaseClass
-                 , context_seq_len: int):
-        #Context Variables (String input)
-        self.context_input = context_input
-        self.context_tokeniser = context_tokeniser
-        self.context_input_object = StandardRecursionInput(self.context_input, self.context_tokeniser, context_seq_len)
-        self.context_tokens = self.context_input_object.convert_initial_input()
-
-        #Content Variables (Where output is handeled)
-        self.content_input = content_input
-        self.content_tokeniser = content_tokeniser
-        self.content_input_object = StandardRecursionInput(self.content_input, self.content_tokeniser)
-
-        #Inputs
-        self.model_input = self.convert_initial_input()
-
-
-    def convert_initial_input(self) -> tf.Tensor:
-        output = tf.concat([self.context_tokens, self.context_input_object.convert_initial_input()], axis=0)
-        return output
-        
-    def  load_in_generated_tokens(self, input_tokens: tf.Tensor) -> None:
-        self.model_input = tf.concat([self.context_tokens, input_tokens], axis=0)
 
 
