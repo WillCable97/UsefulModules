@@ -42,6 +42,7 @@ class TextSequenceInputHandler:
 
         self.auto_regressive_tensor = self.process_input(string_beginning, output_tokeniser)
         self.contexts = self.create_context()
+        #print(f"CONTEXTS: {self.contexts}")
 
     def process_input(self, input: Union[str,tf.Tensor], tokeniser: TokenBaseClass, seq_len = None):
         output = string_to_tokens(input, tokeniser, seq_len) if isinstance(input, str) else input
@@ -67,7 +68,8 @@ class TextSequenceInputHandler:
 
         
     def create_model_input(self):
-        all_inputs = self.contexts
+        all_inputs = []
+        all_inputs += self.contexts
         all_inputs.append(self.auto_regressive_tensor)
         all_inputs = all_inputs[0] if self.single_domain else all_inputs
         return all_inputs
@@ -110,7 +112,13 @@ class OutputSequence:
         return tf.expand_dims(full_tensor, axis =0)
     
     def print_results(self):
-        print(self.output_tokeniser.detokenise(tf.expand_dims(self.generated_tokens, axis=0)))
+        print(self.return_results())
+
+    def return_results(self):
+        return self.output_tokeniser.detokenise(tf.expand_dims(self.generated_tokens, axis=0))
+    
+    def reset_generated_tokens(self):
+        self.generated_tokens = tf.convert_to_tensor([], dtype=tf.int32)
 
 
 
@@ -126,20 +134,19 @@ class TextGenerator:
 
 
     def generate_sequence(self, seqence_length):
+        self.output_handle.reset_generated_tokens()
+
         for i in range(seqence_length):
             model_input = self.input_handle.create_model_input()
             auto_regressive_input = self.input_handle.auto_regressive_tensor
             new_token = self.model_handle.get_new_token_by_max(model_input)
+            
             if not self.output_handle.init_complete: self.output_handle.run_init(init_tokens=auto_regressive_input)
             self.output_handle.add_token(new_token=new_token)
             self.input_handle.auto_regressive_tensor = self.output_handle.create_new_input()
-
-
-            #print(f"Initial Input: {self.input_handle.auto_regressive_tensor}")
-            #print(f"Updated Input: {self.output_handle.create_new_input()}")
-            
-
-        self.output_handle.print_results()
+        
+        return self.output_handle.return_results()[0]
+        
         
 
 

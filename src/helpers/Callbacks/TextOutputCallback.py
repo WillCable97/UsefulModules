@@ -1,27 +1,32 @@
-from src.helpers.TextGenerator import TextGenerator
 from src.helpers.Callbacks.BaseCallbacks import path_to_model_saves
+from src.helpers.TextGenerator import TextGenerator
+from src.data.Text.Tokens.BaseClass import TokenBaseClass
 
 import os 
-import keras
+#import keras
+import tensorflow as tf
+from typing import Union
 
 
 
-class OutputTextCallback(keras.callbacks.Callback):
-    def __init__(self, base_path, input_model_name
-                 , input_model, output_token
-                 , texts, tokens, padded_sequence_lens
-                 , file_name = 'text_outputs.txt'):
-        super().__init__()
-        self.input_generator = TextGenerator(input_model=input_model, output_token=output_token, padded_sequence_lens=padded_sequence_lens)
-        self.input_generator.load_inputs_by_string(texts, tokens)
+
+class OutputTextCallback(tf.keras.callbacks.Callback):
+    def __init__(self, string_beginning: Union[str, tf.Tensor], output_tokeniser: TokenBaseClass
+                 , input_model: tf.keras.Model, base_path: str, input_model_name:str
+                 , file_name = 'text_outputs.txt'
+                 , context_inputs: Union[str, list] = None, context_tokenisers: Union[TokenBaseClass, list] = None):
+        self.generator = TextGenerator(string_beginning=string_beginning, output_tokeniser=output_tokeniser, input_model=input_model
+                                       , context_inputs=context_inputs, context_tokenisers=context_tokenisers)
+        
         self.base_path = base_path
         self.input_model_name = input_model_name
-        self.file_name = file_name
-        self.txt_generated = ''
+        self.file_name = file_name   
+        self.txt_generated = "" 
 
+        
     def on_epoch_end(self, epoch, logs=None):
-        self.input_generator.input_model.set_weights(self.model.get_weights())
-        txt = self.input_generator.generate_text(max_len=50)
+        self.generator.model_handle.input_model.set_weights(self.model.get_weights())
+        txt = self.generator.generate_sequence(50)
         print(f"\ngenerated text:  {txt}\n")
         self.txt_generated += f"{epoch + 1}: {txt}\n"
         self.write_output_to_file()

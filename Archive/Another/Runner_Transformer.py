@@ -9,7 +9,7 @@ import src.data.Preprocessing.Text.Tokenise as Tokens
 #from src.models.RecurrentModels.RNN_model import RNN_model
 from src.models.Transformer.Transformer import Transformer
 
-from ModelIO import create_model_save
+from helpers.ModelIO import create_model_save
 
 ############################################################HYPER PARAMTERS#####################################
 
