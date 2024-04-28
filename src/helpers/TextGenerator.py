@@ -1,5 +1,6 @@
 import tensorflow as tf
 import numpy as np
+import random
 
 from src.data.Text.Tokens.BaseClass import TokenBaseClass
 
@@ -83,11 +84,45 @@ class ModelHandler:
     def pass_inputs(self, inputs):
         return self.input_model(inputs)
     
-    def get_new_token_by_max(self, input) -> int:
+    def get_new_greedy_token(self, input) -> int:
         output = self.pass_inputs(inputs=input)
         gen_distribution = output[0][-1]
         found_token = tf.argmax(gen_distribution)
         return found_token
+
+
+    def get_random_token(self, input) -> int:
+        output = self.pass_inputs(inputs=input)
+        gen_distribution = output[0][-1]
+        token_probs = gen_distribution.numpy()
+        
+        # Normalize probabilities to ensure they sum up to 1
+        token_probs /= sum(token_probs)
+        
+        # Randomly select a token based on probabilities
+        found_token = random.choices(range(len(token_probs)), weights=token_probs)[0]
+        
+        return found_token
+
+
+
+    def get_top_n_tokens(self, input, n: int) -> list:
+        output = self.pass_inputs(inputs=input)
+        gen_distribution = output[0][-1]
+        token_probs = gen_distribution.numpy()
+        
+        # Get the indices of top n tokens
+        top_n_indices = np.argsort(token_probs)[::-1][:n]
+        
+        # Extract top n token probabilities and normalize them
+        top_n_probs = token_probs[top_n_indices]
+        top_n_probs /= sum(top_n_probs)
+        
+        # Randomly select a token from the top n based on probabilities
+        selected_token = random.choices(top_n_indices, weights=top_n_probs)[0]
+        
+        return selected_token
+
 
 
 
@@ -133,17 +168,36 @@ class TextGenerator:
         self.output_handle = OutputSequence(output_tokeniser)
 
 
-    def generate_sequence(self, seqence_length):
+    def generate_sequence(self, seqence_length, selector="greedy"):
         self.output_handle.reset_generated_tokens()
 
         for i in range(seqence_length):
             model_input = self.input_handle.create_model_input()
             auto_regressive_input = self.input_handle.auto_regressive_tensor
-            new_token = self.model_handle.get_new_token_by_max(model_input)
+            new_token: int = None
+
+            #print(auto_regressive_input)
+            #print(model_input)
+
+            
+
+            if selector == "greedy":
+                new_token=self.model_handle.get_new_greedy_token(model_input)
+            elif selector == "random":
+                new_token = self.model_handle.get_random_token(model_input)
+            elif selector == "topn":
+                new_token = self.model_handle.get_top_n_tokens(model_input, 10)
+            else: 
+                new_token=self.model_handle.get_new_greedy_token(model_input)
+
+            new_token = self.model_handle.get_top_n_tokens(model_input, 5)
             
             if not self.output_handle.init_complete: self.output_handle.run_init(init_tokens=auto_regressive_input)
             self.output_handle.add_token(new_token=new_token)
             self.input_handle.auto_regressive_tensor = self.output_handle.create_new_input()
+            #self.output_handle.print_results()
+
+        #print(self.output_handle.generated_tokens)
         
         return self.output_handle.return_results()[0]
         

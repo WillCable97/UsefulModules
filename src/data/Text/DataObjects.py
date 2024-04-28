@@ -38,7 +38,8 @@ class SingleDomainDataSet(GeneralTextDataObject):
     def process_text(self, data_file_path:str, data_tokeniser: TokenBaseClass) ->TextProcessor: 
         return_processor = TextProcessor()
         return_processor.read_text_from_file(data_file_path)
-        return_processor.split_text_by_char("[SEQ_SPLITTER]", keep_pivot_string=False)
+        #return_processor.split_text_by_char("[SEQ_SPLITTER]", keep_pivot_string=False)
+        return_processor.split_text_by_length("word", 150)
         token_data =data_tokeniser.tokenise(return_processor.split_raw_data, data_tokeniser.sequence_len)
         labeled_data = token_data.map(lambda input_tensor: (input_tensor[:-1], input_tensor[1:])) #Autoregressive label
         return return_processor, labeled_data
